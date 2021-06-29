@@ -71,36 +71,59 @@ set_teste_tweets_negativos = tweets_negativos[quantidade_de_tweets_negativos_pro
 # print (len(set_teste_tweets_negativos)) #82
 
 bag_of_words=[]
+aval_pos_bow = []
+aval_neg_bow = []
 for linha in set_treino_tweets_negativos:
     tweet = linha[1]
     tokens = nltk.word_tokenize(tweet)
     for token in tokens:
         if token.lower() not in stopwords:
             bag_of_words.append(token.lower())
+            aval_neg_bow.append(token.lower())
 for linha in set_treino_tweets_positivos:
     tweet = linha[1]
     tokens = nltk.word_tokenize(tweet)
     for token in tokens:
         if token.lower() not in stopwords:
             bag_of_words.append(token.lower())
+            aval_pos_bow.append(token.lower())
 
 # print(bag_of_words)
 
 stemmer = nltk.stem.RSLPStemmer()
 
 stemmed_bag_of_words = []
+pos_stemmed_bag_of_words = []
+neg_stemmed_bag_of_words = []
 
 for word in bag_of_words:
     stemmed_bag_of_words.append(stemmer.stem(word))
 
+for word in aval_pos_bow:
+    pos_stemmed_bag_of_words.append(stemmer.stem(word))
+
+for word in aval_neg_bow:
+    neg_stemmed_bag_of_words.append(stemmer.stem(word))
+
+
 # print (stemmed_bag_of_words)
+# print (pos_stemmed_bag_of_words)
+# print (neg_stemmed_bag_of_words)
 
 frequencia_de_dist = nltk.FreqDist(w.lower() for w in stemmed_bag_of_words)
+frequencia_de_dist_pos = nltk.FreqDist(w.lower() for w in pos_stemmed_bag_of_words)
+frequencia_de_dist_neg = nltk.FreqDist(w.lower() for w in neg_stemmed_bag_of_words)
 # print("Palavras mais comuns são ", frequencia_de_dist.most_common(50))
 
 sorted_stemmed_bag_of_words = dict(sorted(frequencia_de_dist.items(), key=lambda x: x[1], reverse=True))
+sorted_pos_stemmed_bag_of_words = dict(sorted(frequencia_de_dist_pos.items(), key=lambda x: x[1], reverse=True))
+sorted_neg_stemmed_bag_of_words = dict(sorted(frequencia_de_dist_neg.items(), key=lambda x: x[1], reverse=True))
 keys_sorted_stemmed_bag_of_words = list(sorted_stemmed_bag_of_words.keys())
+keys_sorted_pos_stemmed_bag_of_words = list(sorted_pos_stemmed_bag_of_words.keys())
+keys_sorted_neg_stemmed_bag_of_words = list(sorted_neg_stemmed_bag_of_words.keys())
 # print (keys_sorted_stemmed_bag_of_words)
+# print (keys_sorted_neg_stemmed_bag_of_words)
+# print (keys_sorted_pos_stemmed_bag_of_words)
 
 # Preparando array pro knn
 set_treino = set_treino_tweets_negativos + set_treino_tweets_positivos
@@ -110,8 +133,11 @@ random.shuffle(set_teste)
 # print (set_treino)
 # print(set_teste)
 used_words = qtidade_palavras_bag_of_words
-bag_of_words_pro_knn = keys_sorted_stemmed_bag_of_words[:used_words]
-#print(bag_of_words_pro_knn)
+bag_of_pos_words_pro_knn = keys_sorted_pos_stemmed_bag_of_words[:used_words]
+bag_of_neg_words_pro_knn = keys_sorted_neg_stemmed_bag_of_words[:used_words]
+#bag_of_words_pro_knn = keys_sorted_stemmed_bag_of_words[:used_words]
+bag_of_words_pro_knn = bag_of_neg_words_pro_knn + bag_of_pos_words_pro_knn
+# print(bag_of_words_pro_knn)
 
 set_treino_pro_knn = []
 set_treino_pro_weka = []
@@ -161,6 +187,8 @@ for linha in set_treino_pro_knn:
 # print (contador_tweets_negativos)
 # print (contador_tweets_positivos)
 
+
+
 set_teste_pro_knn = []
 set_teste_pro_weka = []
 
@@ -199,6 +227,18 @@ for linha in set_teste:
 
 # print (set_teste_pro_knn)
 # print (set_teste_pro_weka)
+
+contador_tweets_positivos = 0
+contador_tweets_negativos = 0
+for linha in set_teste_pro_knn:
+    if linha[len(linha)-1]==0:
+        contador_tweets_negativos +=1
+    else:
+        contador_tweets_positivos +=1
+# print (contador_tweets_negativos) # 82
+# print (contador_tweets_positivos) # 40
+
+
 
 def euclidiana(atual, amostra):
     soma = 0;
@@ -242,8 +282,16 @@ def troca(linha1, linha2):
 k = k_vizinhos
 
 acertos=0
+positivo_classificado_como_positivo = 0
+positivo_classificado_como_negativo = 0
+negativo_classificado_como_positivo = 0
+negativo_classificado_como_negativo = 0
 def executaKnn():
     acertos = 0
+    positivo_classificado_como_positivo = 0
+    positivo_classificado_como_negativo = 0
+    negativo_classificado_como_positivo = 0
+    negativo_classificado_como_negativo = 0
     for i in range((len(set_teste_pro_knn))-1):
         distancia = [[0 for x in range(2)] for y in range(482)]
         for j in range((len(set_treino_pro_knn))-1):
@@ -257,12 +305,26 @@ def executaKnn():
         # print("Avaliação Real:", avaliacao_real)
         if (avaliacao_real==avaliacao_predita):
             acertos+=1
+        if (avaliacao_real==0 and avaliacao_predita==0):
+            negativo_classificado_como_negativo = negativo_classificado_como_negativo+1
+        if (avaliacao_real==0 and avaliacao_predita==1):
+            negativo_classificado_como_positivo =negativo_classificado_como_positivo+1
+        if (avaliacao_real==1 and avaliacao_predita==0):
+            positivo_classificado_como_negativo =positivo_classificado_como_negativo+1
+        if (avaliacao_real==1 and avaliacao_predita==1):
+            positivo_classificado_como_positivo =positivo_classificado_como_positivo+1
+    print("Positivos avaliados como positivos = ", positivo_classificado_como_positivo)
+    print("Positivos avaliados como negativos = ", positivo_classificado_como_negativo)
+    print("Negativos avaliados como positivos = ", negativo_classificado_como_positivo)
+    print("Negativos avaliados como negativos = ", negativo_classificado_como_negativo)
+    print("Quantidade total de testes", len(set_teste_pro_knn))
+    print("Quantidade total de acertos", acertos)
     return acertos
 
 
 acertos = executaKnn()
-print ("Acertos", acertos)
-print ("Testes", len(set_teste_pro_knn))
+# print ("Acertos", acertos)
+# print ("Testes", len(set_teste_pro_knn))
 
 with open('tweetsarrf.txt', 'w', encoding='utf-8') as f:
     f.write("% 1. Title: Tweets evaluation" + "\n")
