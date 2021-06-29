@@ -135,8 +135,8 @@ random.shuffle(set_teste)
 used_words = qtidade_palavras_bag_of_words
 bag_of_pos_words_pro_knn = keys_sorted_pos_stemmed_bag_of_words[:used_words]
 bag_of_neg_words_pro_knn = keys_sorted_neg_stemmed_bag_of_words[:used_words]
-#bag_of_words_pro_knn = keys_sorted_stemmed_bag_of_words[:used_words]
-bag_of_words_pro_knn = bag_of_neg_words_pro_knn + bag_of_pos_words_pro_knn
+bag_of_words_pro_knn = keys_sorted_stemmed_bag_of_words[:used_words]
+bbag_of_words_pro_knn = bag_of_neg_words_pro_knn + bag_of_pos_words_pro_knn
 # print(bag_of_words_pro_knn)
 
 set_treino_pro_knn = []
@@ -233,7 +233,7 @@ contador_tweets_negativos = 0
 for linha in set_teste_pro_knn:
     if linha[len(linha)-1]==0:
         contador_tweets_negativos +=1
-    else:
+    if linha[len(linha)-1]==1:
         contador_tweets_positivos +=1
 # print (contador_tweets_negativos) # 82
 # print (contador_tweets_positivos) # 40
@@ -292,15 +292,22 @@ def executaKnn():
     positivo_classificado_como_negativo = 0
     negativo_classificado_como_positivo = 0
     negativo_classificado_como_negativo = 0
-    for i in range((len(set_teste_pro_knn))-1):
+    conta_tweets_pos = 0
+    conta_tweets_neg = 0
+    for i in range((len(set_teste_pro_knn))):
         distancia = [[0 for x in range(2)] for y in range(482)]
         for j in range((len(set_treino_pro_knn))-1):
-            distancia[j][0] = euclidiana(set_teste_pro_knn[i], set_treino_pro_knn[j]);
-            distancia[j][1] = set_treino_pro_knn[j][used_words];
+            distancia[j][0] = euclidiana(set_teste_pro_knn[i], set_treino_pro_knn[j])
+            # distancia[j][1] = set_treino_pro_knn[j][used_words]
+            distancia[j][1] = set_treino_pro_knn[j][len(set_treino_pro_knn[i]) - 1]
 
         distancia.sort()
         avaliacao_predita = moda(distancia, k)
-        avaliacao_real = set_teste_pro_knn[i][used_words]
+        avaliacao_real = set_teste_pro_knn[i][len(set_teste_pro_knn[i])-1]
+        if (avaliacao_real==0):
+            conta_tweets_neg = conta_tweets_neg + 1
+        if (avaliacao_real==1):
+            conta_tweets_pos = conta_tweets_pos + 1
         # print("Avaliação Predita:", avaliacao_predita)
         # print("Avaliação Real:", avaliacao_real)
         if (avaliacao_real==avaliacao_predita):
@@ -308,17 +315,29 @@ def executaKnn():
         if (avaliacao_real==0 and avaliacao_predita==0):
             negativo_classificado_como_negativo = negativo_classificado_como_negativo+1
         if (avaliacao_real==0 and avaliacao_predita==1):
-            negativo_classificado_como_positivo =negativo_classificado_como_positivo+1
+            negativo_classificado_como_positivo = negativo_classificado_como_positivo+1
         if (avaliacao_real==1 and avaliacao_predita==0):
-            positivo_classificado_como_negativo =positivo_classificado_como_negativo+1
+            positivo_classificado_como_negativo = positivo_classificado_como_negativo+1
         if (avaliacao_real==1 and avaliacao_predita==1):
-            positivo_classificado_como_positivo =positivo_classificado_como_positivo+1
-    print("Positivos avaliados como positivos = ", positivo_classificado_como_positivo)
-    print("Positivos avaliados como negativos = ", positivo_classificado_como_negativo)
-    print("Negativos avaliados como positivos = ", negativo_classificado_como_positivo)
-    print("Negativos avaliados como negativos = ", negativo_classificado_como_negativo)
+            positivo_classificado_como_positivo = positivo_classificado_como_positivo+1
+    print("Positivos avaliados como positivos =", positivo_classificado_como_positivo)
+    print("Positivos avaliados como negativos =", positivo_classificado_como_negativo)
+    print("Negativos avaliados como positivos =", negativo_classificado_como_positivo)
+    print("Negativos avaliados como negativos =", negativo_classificado_como_negativo)
     print("Quantidade total de testes", len(set_teste_pro_knn))
     print("Quantidade total de acertos", acertos)
+    #print("Tweets pos", conta_tweets_pos)
+    #print("Tweets neg", conta_tweets_neg)
+    print ("Em relação aos tweets positivos")
+    tp = positivo_classificado_como_positivo
+    tn = negativo_classificado_como_negativo
+    fp = negativo_classificado_como_positivo
+    fn = positivo_classificado_como_negativo
+    print("TP:", tp, " TN:", tn, " FP:", fp, " FN:", fn)
+    print("Precision:", (tp / (tp+fp)))
+    print("Recall:", (tp / (tp+fn)))
+    print("F-Measure:", 2*(tp / (tp+fp))*(tp / (tp+fn)) / (tp / ((tp+fp)) + (tp / (tp+fn))))
+
     return acertos
 
 
