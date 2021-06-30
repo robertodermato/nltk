@@ -398,6 +398,3 @@ with open('tweets_teste.arff', 'w', encoding='utf-8') as f:
     for tweet in set_teste_pro_weka:
         linha = ', '.join(map(str, tweet))
         f.write(linha + "\n")
-    for tweet in set_teste_pro_weka:
-        linha = ', '.join(map(str, tweet))
-        f.write(linha + "\n")
